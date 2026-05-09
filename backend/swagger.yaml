@@ -1,0 +1,418 @@
+openapi: 3.0.3
+info:
+  title: BookShelf API
+  description: |
+    REST API لنظام مكتبة الكتب BookShelf
+    - Authentication via Laravel Sanctum (Bearer Token)
+    - Admin endpoints require role=admin
+  version: 1.0.0
+  contact:
+    email: admin@bookshelf.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local Development
+  - url: https://your-domain.com/api
+    description: Production
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:       { type: integer }
+        username: { type: string }
+        name:     { type: string }
+        email:    { type: string, format: email }
+        role:     { type: string, enum: [user, admin] }
+        avatar:   { type: string, nullable: true }
+
+    Book:
+      type: object
+      properties:
+        id:          { type: integer }
+        title:       { type: string }
+        author:      { type: string }
+        category:    { type: string }
+        cover:       { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        rating:      { type: number, format: float }
+        created_at:  { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        errors:  { type: object }
+
+paths:
+  # ── AUTH ──────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: إنشاء حساب جديد
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, name, email, password, password_confirmation]
+              properties:
+                username:              { type: string, minLength: 3 }
+                name:                  { type: string }
+                email:                 { type: string, format: email }
+                password:              { type: string, minLength: 6 }
+                password_confirmation: { type: string }
+      responses:
+        201:
+          description: تم إنشاء الحساب بنجاح
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user:    { $ref: '#/components/schemas/User' }
+                  token:   { type: string }
+        422:
+          description: Validation Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: تسجيل الدخول
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential, password]
+              properties:
+                credential: { type: string, description: "username or email" }
+                password:   { type: string }
+      responses:
+        200:
+          description: تم تسجيل الدخول
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user:    { $ref: '#/components/schemas/User' }
+                  token:   { type: string }
+        422:
+          description: بيانات غلط
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: تسجيل الخروج
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: تم تسجيل الخروج
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: بيانات المستخدم الحالي
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: بيانات المستخدم
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+
+  # ── BOOKS ─────────────────────────────────────────────
+  /books:
+    get:
+      tags: [Books]
+      summary: قائمة الكتب
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        200:
+          description: قائمة الكتب
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  books:
+                    type: array
+                    items: { $ref: '#/components/schemas/Book' }
+
+  /books/{id}:
+    get:
+      tags: [Books]
+      summary: تفاصيل كتاب
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: تفاصيل الكتاب
+        404:
+          description: الكتاب غير موجود
+
+  # ── USER ──────────────────────────────────────────────
+  /user/profile:
+    get:
+      tags: [User]
+      summary: الملف الشخصي
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: بيانات المستخدم
+    put:
+      tags: [User]
+      summary: تحديث الملف الشخصي
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:  { type: string }
+                email: { type: string, format: email }
+      responses:
+        200:
+          description: تم التحديث
+
+  /user/password:
+    put:
+      tags: [User]
+      summary: تغيير كلمة المرور
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password:      { type: string }
+                password:              { type: string, minLength: 6 }
+                password_confirmation: { type: string }
+      responses:
+        200:
+          description: تم تغيير كلمة المرور
+        422:
+          description: كلمة المرور الحالية غلط
+
+  /user/avatar:
+    post:
+      tags: [User]
+      summary: رفع صورة شخصية
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: تم رفع الصورة
+
+  /user/favorites:
+    get:
+      tags: [User]
+      summary: قائمة المفضلة
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: الكتب المفضلة
+
+  /user/favorites/{bookId}:
+    post:
+      tags: [User]
+      summary: إضافة لمفضلة
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        201:
+          description: تم الإضافة
+        409:
+          description: موجود بالفعل
+    delete:
+      tags: [User]
+      summary: حذف من المفضلة
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: تم الحذف
+
+  /user/saved:
+    get:
+      tags: [User]
+      summary: قائمة المحفوظات
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: الكتب المحفوظة
+
+  /user/saved/{bookId}:
+    post:
+      tags: [User]
+      summary: حفظ كتاب
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        201:
+          description: تم الحفظ
+    delete:
+      tags: [User]
+      summary: حذف من المحفوظات
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: تم الحذف
+
+  # ── ADMIN ─────────────────────────────────────────────
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: إحصائيات الداشبورد
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: إحصائيات النظام
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      total_books:      { type: integer }
+                      total_users:      { type: integer }
+                      total_admins:     { type: integer }
+                      total_categories: { type: integer }
+                  recent_books: { type: array, items: { $ref: '#/components/schemas/Book' } }
+                  recent_users: { type: array }
+
+  /admin/books:
+    post:
+      tags: [Admin]
+      summary: إضافة كتاب جديد
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, author, category]
+              properties:
+                title:       { type: string }
+                author:      { type: string }
+                category:    { type: string }
+                cover:       { type: string }
+                description: { type: string }
+                rating:      { type: number }
+      responses:
+        201:
+          description: تم إضافة الكتاب
+
+  /admin/books/{id}:
+    put:
+      tags: [Admin]
+      summary: تعديل كتاب
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Book' }
+      responses:
+        200:
+          description: تم التعديل
+    delete:
+      tags: [Admin]
+      summary: حذف كتاب
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: تم الحذف
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: قائمة المستخدمين
+      security: [{ BearerAuth: [] }]
+      responses:
+        200:
+          description: قائمة المستخدمين مع pagination
+
+  /admin/users/{id}:
+    delete:
+      tags: [Admin]
+      summary: حذف مستخدم
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: تم حذف المستخدم
+        403:
+          description: لا يمكن حذف أدمن

@@ -1,0 +1,73 @@
+/* src/pages/Library/LibraryPage.module.css */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* ── Hero ── */
+.hero {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  padding: 2rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+}
+
+.heroText { flex: 1; }
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+
+.heroDesc {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  max-width: 260px;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+.heroBtn {
+  background: var(--color-primary);
+  border: none;
+  padding: 12px 26px;
+  border-radius: var(--radius-full);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.heroBtn:hover { background: var(--color-primary-dark); }
+
+.heroBooks {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.heroBook {
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  box-shadow: var(--shadow-book);
+  transition: transform 0.2s;
+}
+.heroBook:hover { transform: translateY(-4px); }
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 1.25rem;
+}

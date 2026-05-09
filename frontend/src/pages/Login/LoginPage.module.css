@@ -1,0 +1,11 @@
+/* src/pages/Login/LoginPage.module.css */
+.demoHint {
+  margin-top: 1rem;
+  text-align: left;
+  direction: ltr;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
